@@ -12,10 +12,19 @@ const port = process.env.PORT || 3000;
 
 app.use(express.static(publicPath));
 
-io.on('connection',(socket) => {
+io.on('connection',(socket)=> {
     console.log('New user connected');
 
-    socket.on('disconnect',()=>{
+    socket.emit('newMessage',{
+        from: 'Hila',
+        text: 'See you!',
+        createdAt: new Date()
+    });
+
+    socket.on('createMessage',(newMessage) =>{
+        console.log('createMessage',newMessage);
+    });
+    socket.on('disconnect',()=> {
         console.log('User was disconnected');
     });
 });
