@@ -23,8 +23,10 @@ io.on('connection',(socket)=> {
     socket.on('createMessage',(newMessage,callback) =>{
 
         console.log('createMessage',newMessage);
-        io.emit('newMessage',generateMessage(newMessage.from,newMessage.text));
-        callback? callback('This is from the server'):console.log('malware detect'); //TODO: add auth for createMessage listener
+        if (newMessage && newMessage.from && newMessage.text){
+         io.emit('newMessage',generateMessage(newMessage.from,newMessage.text));
+         callback? callback('This is from the server'):console.log('malware detect'); //TODO: add auth for createMessage listener
+        }
     });
 
     socket.on('createLocation',(positionMessage,callback)=>{
