@@ -4,6 +4,7 @@ const express = require('express');
 const socketIO = require('socket.io');
 
 const {generateMessage} = require('./utils/message');
+const {geocodeAddress} = require('./utils/geocode');
 var app = express();
 var server = http.createServer(app);
 var io = socketIO(server);
@@ -25,6 +26,18 @@ io.on('connection',(socket)=> {
         io.emit('newMessage',generateMessage(newMessage.from,newMessage.text));
         callback? callback('This is from the server'):console.log('malware detect'); //TODO: add auth for createMessage listener
     });
+
+    socket.on('createLocation',(positionMessage,callback)=>{
+        console.log('createLocation',positionMessage);
+        geocodeAddress(positionMessage.lat,positionMessage.lng,function(error,res){
+            if (error){
+                return console.log('Unable to fetch Address');
+            }
+            io.emit('newMessage',generateMessage(positionMessage.from,`Hi from ${res.address}!`));
+            callback('This is from the server');
+        });
+    })
+
     socket.on('disconnect',()=> {
         console.log('User was disconnected');
     });
