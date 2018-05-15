@@ -19,10 +19,11 @@ io.on('connection',(socket)=> {
     socket.emit('newMessage',generateMessage('System','Wellcome new user!'));
     socket.broadcast.emit('newMessage',generateMessage('System','New user has joined!'));
 
-    socket.on('createMessage',(newMessage) =>{
+    socket.on('createMessage',(newMessage,callback) =>{
 
         console.log('createMessage',newMessage);
         io.emit('newMessage',generateMessage(newMessage.from,newMessage.text));
+        callback? callback('This is from the server'):console.log('malware detect'); //TODO: add auth for createMessage listener
     });
     socket.on('disconnect',()=> {
         console.log('User was disconnected');
