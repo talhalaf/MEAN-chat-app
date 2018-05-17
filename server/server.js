@@ -14,8 +14,12 @@ const port = process.env.PORT || 3000;
 
 app.use(express.static(publicPath));
 
+var connections = [];
+
 io.on('connection',(socket)=> {
     console.log('New user connected');
+    connections.push(socket.id);
+    console.log(connections);
 
     socket.emit('newMessage',generateMessage('System','Wellcome new user!'));
     socket.broadcast.emit('newMessage',generateMessage('System','New user has joined!'));
@@ -23,6 +27,7 @@ io.on('connection',(socket)=> {
     socket.on('createMessage',(newMessage,callback) =>{
 
         console.log('createMessage',newMessage);
+
         if (newMessage && newMessage.from && newMessage.text){
          io.emit('newMessage',generateMessage(newMessage.from,newMessage.text));
          callback? callback('This is from the server'):console.log('malware detect'); //TODO: add auth for createMessage listener
@@ -33,18 +38,22 @@ io.on('connection',(socket)=> {
         console.log('createLocation',positionMessage);
         geocodeAddress(positionMessage.lat,positionMessage.lng,function(error,res){
             if (error){
-                return console.log('Unable to fetch Address');
+                socket.emit('newMessage',generateMessage('System','Too many requests'));
+                callback(error);
             }
-            io.emit('newMessage',generateMessage(positionMessage.from,`Hi from ${res.address}!`));
-            callback('This is from the server');
+            else {
+                io.emit('newMessage',generateMessage(positionMessage.from,'Hi from '+res.address));
+                callback(undefined,'This is from the server');
+            }
         });
     })
 
     socket.on('disconnect',()=> {
         console.log('User was disconnected');
+        connections.splice(socket.id,1);
+        console.log(connections);
     });
 });
-
 
 server.listen(port,() => {
     console.log(`Server is up on port ${port}`);
