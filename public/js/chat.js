@@ -48,6 +48,7 @@ socket.on('newLocationMessage',function(message){
     });
     console.log(html);
     jQuery('#messages').append(html);
+    scrollToBottom();
 });
 
 
