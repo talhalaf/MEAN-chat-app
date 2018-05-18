@@ -4,7 +4,8 @@ const express = require('express');
 const socketIO = require('socket.io');
 
 const {generateMessage} = require('./utils/message');
-const {geocodeAddress} = require('./utils/geocode');
+const {generateLocationMessage} = require('./utils/message');
+
 var app = express();
 var server = http.createServer(app);
 var io = socketIO(server);
@@ -35,17 +36,14 @@ io.on('connection',(socket)=> {
     });
 
     socket.on('createLocation',(positionMessage,callback)=>{
-        console.log('createLocation',positionMessage);
-        geocodeAddress(positionMessage.lat,positionMessage.lng,function(error,res){
-            if (error){
-                socket.emit('newMessage',generateMessage('System','Too many requests'));
-                callback(error);
-            }
-            else {
-                io.emit('newMessage',generateMessage(positionMessage.from,'Hi from '+res.address));
-                callback(undefined,'This is from the server');
-            }
-        });
+        
+        var generatedMessage = generateLocationMessage(positionMessage.from,positionMessage.lat,positionMessage.lng).then(res => {
+            console.log('generatedMessage', res);
+            io.emit('newLocationMessage', res);
+            callback(undefined,'This is from the server');
+        }).catch(e =>{
+            console.log(e);
+        });;
     })
 
     socket.on('disconnect',()=> {
