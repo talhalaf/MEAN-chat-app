@@ -8,7 +8,7 @@ socket.on('connect',function(){
             alert(error);
             window.location.href = '/';
         }else{
-            console.log('Wellcome to room',params.room);
+            // console.log('Wellcome to room',params.room);
         }
     })
 });
@@ -57,14 +57,14 @@ socket.on('newMessage',function(message){
 socket.on('newLocationMessage',function(message){
 
     var template = jQuery('#location-message-template').html();
-    console.log(message);
+    // console.log(message);
     var html = Mustache.render(template,{
         from: message.from,
         url: message.url,
         address: message.address,
         formattedTime: moment(message.createdAt).format('HH:mm')
     });
-    console.log(html);
+    // console.log(html);
     jQuery('#messages').append(html);
     scrollToBottom();
 });

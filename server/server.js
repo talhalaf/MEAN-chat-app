@@ -26,31 +26,32 @@ io.on('connection',(socket)=> {
         if(!params || !isRealString(params.name) || !isRealString(params.room)){
             return callback('Name and room are required');
         }
-        socket.emit('newMessage',generateMessage('System','Wellcome new user!'));
+
+        // joining user to a room
+        socket.join(params.room);
+
+        // in case this socket has arrived directly from another room
+        users.removeUser(socket.id);
+        var user = users.addUser(socket.id,params.name,params.room);
+
+        // emitting greet to the specific socket (user)
+        socket.emit('newMessage',generateMessage('System',`Hi ${user.name}! Wellcome to room ${user.room}`));
         socket.broadcast.to(params.room).emit('newMessage',generateMessage('System',`${params.name} has joined the room!`));
 
-        socket.join(params.room);
-        users.removeUser(socket.id);
-        users.addUser(socket.id,params.name,params.room);
-        
-        console.log(users.getUserList(params.room));
         io.to(params.room).emit('updateUserList',users.getUserList(params.room));
         callback();
     })
     socket.on('createMessage',(newMessage,callback) =>{
         var user = users.getUser(socket.id);
-        console.log('createMessage',newMessage);
-
-        if (newMessage && isRealString(newMessage.text)){
-         io.to(user.room).emit('newMessage',generateMessage(user.name,newMessage.text));
-         callback? callback('This is from the server'):console.log('malware detect'); //TODO: add auth for createMessage listener
+        if (user && newMessage && isRealString(newMessage.text)){
+            io.to(user.room).emit('newMessage',generateMessage(user.name,newMessage.text));
+            callback? callback('This is from the server'):console.log('malware detect'); //TODO: add auth for createMessage listener
         }
     });
 
     socket.on('createLocation',(positionMessage,callback)=>{
         var user = users.getUser(socket.id);
         var generatedMessage = generateLocationMessage(user.name,positionMessage.lat,positionMessage.lng).then(res => {
-            console.log('generatedMessage', res);
             io.to(user.room).emit('newLocationMessage', res);
             callback(undefined,'This is from the server');
         }).catch(e =>{
