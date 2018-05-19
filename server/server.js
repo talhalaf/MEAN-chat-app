@@ -38,20 +38,20 @@ io.on('connection',(socket)=> {
         callback();
     })
     socket.on('createMessage',(newMessage,callback) =>{
-
+        var user = users.getUser(socket.id);
         console.log('createMessage',newMessage);
 
-        if (newMessage && newMessage.from && newMessage.text){
-         io.emit('newMessage',generateMessage(newMessage.from,newMessage.text));
+        if (newMessage && isRealString(newMessage.text)){
+         io.to(user.room).emit('newMessage',generateMessage(user.name,newMessage.text));
          callback? callback('This is from the server'):console.log('malware detect'); //TODO: add auth for createMessage listener
         }
     });
 
     socket.on('createLocation',(positionMessage,callback)=>{
-        
-        var generatedMessage = generateLocationMessage(positionMessage.from,positionMessage.lat,positionMessage.lng).then(res => {
+        var user = users.getUser(socket.id);
+        var generatedMessage = generateLocationMessage(user.name,positionMessage.lat,positionMessage.lng).then(res => {
             console.log('generatedMessage', res);
-            io.emit('newLocationMessage', res);
+            io.to(user.room).emit('newLocationMessage', res);
             callback(undefined,'This is from the server');
         }).catch(e =>{
             console.log(e);
