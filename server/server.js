@@ -5,26 +5,38 @@ const socketIO = require('socket.io');
 
 const {generateMessage} = require('./utils/message');
 const {generateLocationMessage} = require('./utils/message');
+const {isRealString} = require('./utils/validation.js');
+const {Users} = require('./utils/users');
 
 var app = express();
 var server = http.createServer(app);
 var io = socketIO(server);
+var users = new Users();
 
 const publicPath = path.join(__dirname,'..',path.win32.basename('/public'));
 const port = process.env.PORT || 3000;
 
 app.use(express.static(publicPath));
 
-var connections = [];
 
 io.on('connection',(socket)=> {
     console.log('New user connected');
-    connections.push(socket.id);
-    console.log(connections);
 
-    socket.emit('newMessage',generateMessage('System','Wellcome new user!'));
-    socket.broadcast.emit('newMessage',generateMessage('System','New user has joined!'));
+    socket.on('joinRoom',(params,callback)=>{
+        if(!params || !isRealString(params.name) || !isRealString(params.room)){
+            return callback('Name and room are required');
+        }
+        socket.emit('newMessage',generateMessage('System','Wellcome new user!'));
+        socket.broadcast.to(params.room).emit('newMessage',generateMessage('System',`${params.name} has joined the room!`));
 
+        socket.join(params.room);
+        users.removeUser(socket.id);
+        users.addUser(socket.id,params.name,params.room);
+        
+        console.log(users.getUserList(params.room));
+        io.to(params.room).emit('updateUserList',users.getUserList(params.room));
+        callback();
+    })
     socket.on('createMessage',(newMessage,callback) =>{
 
         console.log('createMessage',newMessage);
@@ -48,8 +60,8 @@ io.on('connection',(socket)=> {
 
     socket.on('disconnect',()=> {
         console.log('User was disconnected');
-        connections.splice(socket.id,1);
-        console.log(connections);
+        var removedUser = users.removeUser(socket.id);
+        io.to(removedUser.room).emit('updateUserList',users.getUserList(removedUser.room));
     });
 });
 
